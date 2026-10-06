@@ -14,6 +14,20 @@ int main(int argc, char** argv) {
                 argv[0]);
         return 1;
     }
+    
+    // read mode
+    char *mode = argv[1];
+    
+    // read filepath
+    char *filepath = argv[2];
+
+    // read target word
+    char *target_word = argv[3];
+
+    // 3. Use the string
+    printf("The mode argument you passed is: %s\n", mode);
+    printf("The filepath argument you passed is: %s\n", filepath);
+    printf("The target word argument you passed is: %s\n", target_word);
 
     return 0;
 }

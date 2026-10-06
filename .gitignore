@@ -1,0 +1,4 @@
+*.o
+grep*
+test
+test-*
