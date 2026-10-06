@@ -1,0 +1,2 @@
+(1) The total real/clock time was .023 seconds.  Of that time, the elapse time on codespaces was 23 milliseconds, the user time was 11 milliseconds and the system time was 7 milliseconds. There was a lot of time spent with system I/O compared to the user time.
+
