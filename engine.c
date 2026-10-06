@@ -17,14 +17,12 @@ int search_count(char *filename, char *target) {
     int count = 0;
     int character;
 
-    printf("search_count called with filename: %s, target: %s\n", filename, target);
     target_length = strlen(target);
     file = fopen(filename, "r");
 
     window = malloc(target_length);
 
     while ((character = fgetc(file)) != EOF) {
-        printf("Read character: %c\n", (char)character);
         window[window_length++] = (char)character;
 
         if (window_length == target_length) {
@@ -48,21 +46,14 @@ struct count_result search_instance(char *filename, char *target) {
     size_t line_capacity = 0;
     ssize_t line_length;
 
-    if (filename == NULL || target == NULL || *target == '\0') {
-        return result;
-    }
-
     file = fopen(filename, "r");
-    if (file == NULL) {
-        return result;
-    }
 
     while ((line_length = getline(&line, &line_capacity, file)) >= 0) {
         char *start = line;
         char *end;
         char *match = line;
         char *instance;
-        size_t instance_length;
+        int instance_length;
         char **new_instances;
         int occurrences = 0;
 
@@ -76,7 +67,7 @@ struct count_result search_instance(char *filename, char *target) {
             end--;
         }
 
-        instance_length = (size_t)(end - start);
+        instance_length = (int)(end - start);
         instance = malloc(instance_length + 1);
         if (instance == NULL) {
             break;
@@ -85,23 +76,19 @@ struct count_result search_instance(char *filename, char *target) {
         instance[instance_length] = '\0';
 
         while ((match = strstr(match, target)) != NULL) {
-            char *copied_instance;
-
             new_instances = realloc(result.instances,
-                                    (size_t)(result.count + 1) * sizeof(*new_instances));
+                                    (int)(result.count + 1) * sizeof(*new_instances));
             if (new_instances == NULL) {
                 free(instance);
                 break;
             }
 
             result.instances = new_instances;
-            copied_instance = strdup(instance);
-            if (copied_instance == NULL) {
+            result.instances[result.count++] = strdup(instance);
+            if (result.instances[result.count - 1] == NULL) {
                 free(instance);
                 break;
             }
-
-            result.instances[result.count++] = copied_instance;
             occurrences++;
             match += strlen(target);
         }
@@ -109,6 +96,9 @@ struct count_result search_instance(char *filename, char *target) {
         free(instance);
         if (occurrences == 0) {
             continue;
+        }
+        if (result.count == 0) {
+            break;
         }
     }
 
