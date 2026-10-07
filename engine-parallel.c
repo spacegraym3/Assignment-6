@@ -97,27 +97,8 @@ static void *count_worker(void *arg) {
     size_t bytes_read;
     size_t i;
 
-    if (file == NULL) {
-        args->failed = 1;
-        return NULL;
-    }
-    if (target_length == 0) {
-        fclose(file);
-        return NULL;
-    }
-    if (chunk_length > SIZE_MAX - target_length + 1) {
-        args->failed = 1;
-        fclose(file);
-        return NULL;
-    }
-
     read_length = chunk_length + target_length - 1;
     buffer = malloc(read_length == 0 ? 1 : read_length);
-    if (buffer == NULL) {
-        args->failed = 1;
-        fclose(file);
-        return NULL;
-    }
     if (fseek(file, args->start, SEEK_SET) != 0) {
         args->failed = 1;
         free(buffer);
@@ -125,12 +106,6 @@ static void *count_worker(void *arg) {
         return NULL;
     }
     bytes_read = fread(buffer, 1, read_length, file);
-    if (ferror(file)) {
-        args->failed = 1;
-        free(buffer);
-        fclose(file);
-        return NULL;
-    }
 
     for (i = 0; i < chunk_length && i + target_length <= bytes_read; i++) {
         if (memcmp(buffer + i, args->target, target_length) == 0) {
