@@ -11,16 +11,6 @@
 #include <sys/types.h>
 
 #define MAX_WORKERS 4
-/*
-struct worker_args {
-    char *filename;
-    char *target;
-
-    long start; //start of the chunk to process
-    long end; //end of the chunk to process
-
-};
-*/
 
 struct worker_args {
     char *filename;
@@ -45,19 +35,12 @@ static int worker_count(long file_size) {
     return count;
 }
 
-static int get_file_size(char *filename, long *file_size) {
-    struct stat file_stat;
-
-    if (stat(filename, &file_stat) != 0) {
-        perror(filename);
-        return 0;
+static long long get_file_size(const char *filename) {
+    struct stat st;
+    if (stat(filename, &st) == 0) {
+        return (long long)st.st_size;
     }
-    if (file_stat.st_size < 0) {
-        fprintf(stderr, "%s: invalid file size\n", filename);
-        return 0;
-    }
-    *file_size = (long)file_stat.st_size;
-    return 1;
+    return -1; // Error opening or finding file
 }
 
 static void set_worker_ranges(struct worker_args *args, int count,
@@ -275,10 +258,7 @@ int search_count(char *filename, char *target) {
     int i;
     int total = 0;
 
-    if (filename == NULL || target == NULL ||
-        !get_file_size(filename, &file_size)) {
-        return 0;
-    }
+    file_size = get_file_size(filename);
     count = worker_count(file_size);
     set_worker_ranges(args, count, filename, target, file_size);
     if (!run_workers(args, threads, count, count_worker)) {
@@ -298,16 +278,12 @@ struct count_result search_instance(char *filename, char *target) {
     struct worker_args args[MAX_WORKERS];
     pthread_t threads[MAX_WORKERS] = {0};
     struct count_result result = {0, NULL};
-    long file_size;
     int count;
     int i;
     int total = 0;
     int offset = 0;
 
-    if (filename == NULL || target == NULL ||
-        !get_file_size(filename, &file_size)) {
-        return result;
-    }
+    long file_size = get_file_size(filename);
     count = worker_count(file_size);
     set_worker_ranges(args, count, filename, target, file_size);
     if (!run_workers(args, threads, count, instance_worker)) {
