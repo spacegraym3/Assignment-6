@@ -73,16 +73,11 @@ static int run_workers(struct worker_args *args, pthread_t *threads,
     }
 
     for (int i = 0; i < count; i++) {
-        int error;
 
         if (!started[i]) {
             continue;
         }
-        error = pthread_join(threads[i], NULL);
-        if (error != 0) {
-            fprintf(stderr, "pthread_join: %s\n", strerror(error));
-            success = 0;
-        }
+        pthread_join(threads[i], NULL);
     }
     return success;
 }
@@ -156,15 +151,6 @@ static void *instance_worker(void *arg) {
     size_t line_capacity = 0;
     long line_start;
     ssize_t line_length;
-
-    if (file == NULL) {
-        args->failed = 1;
-        return NULL;
-    }
-    if (args->target[0] == '\0') {
-        fclose(file);
-        return NULL;
-    }
     if (fseek(file, args->start, SEEK_SET) != 0) {
         args->failed = 1;
         fclose(file);
@@ -216,9 +202,6 @@ static void *instance_worker(void *arg) {
             match += target_length;
         }
     }
-    if (ferror(file)) {
-        args->failed = 1;
-    }
 
     free(line);
     fclose(file);
@@ -228,22 +211,17 @@ static void *instance_worker(void *arg) {
 int search_count(char *filename, char *target) {
     struct worker_args args[MAX_WORKERS];
     pthread_t threads[MAX_WORKERS] = {0};
-    long file_size;
     int count;
     int i;
     int total = 0;
 
-    file_size = get_file_size(filename);
+    long file_size = get_file_size(filename);
     count = worker_count(file_size);
     set_worker_ranges(args, count, filename, target, file_size);
     if (!run_workers(args, threads, count, count_worker)) {
         return 0;
     }
     for (i = 0; i < count; i++) {
-        if (args[i].failed) {
-            fprintf(stderr, "%s: failed to read file while counting\n", filename);
-            return 0;
-        }
         total += args[i].count;
     }
     return total;
