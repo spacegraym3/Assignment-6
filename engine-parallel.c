@@ -10,7 +10,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define MAX_WORKERS 4
+#define MAX_WORKERS 10
 
 struct worker_args {
     char *filename;
