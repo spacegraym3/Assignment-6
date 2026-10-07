@@ -10,25 +10,27 @@
 #define MAX_LINE_LENGTH 256
 
 int search_count(char *filename, char *target) {
-    FILE *file;
-    char *window = NULL;
+
+    int target_length = strlen(target);
+
+    char *window = malloc(target_length);
     int window_length = 0;
-    int target_length;
+
+    FILE *file = fopen(filename, "r");
     int count = 0;
     int character;
 
-    target_length = strlen(target);
-    file = fopen(filename, "r");
-
-    window = malloc(target_length);
-
+    // Read the file character by character and maintain a sliding window of the last target_length characters
     while ((character = fgetc(file)) != EOF) {
         window[window_length++] = (char)character;
 
         if (window_length == target_length) {
+            // Compare the current window with the target string
             if (memcmp(window, target, target_length) == 0) {
                 count++;
             }
+
+            // Shift the window to the left by one character
             memmove(window, window + 1, target_length - 1);
             window_length = target_length - 1;
         }
@@ -40,14 +42,15 @@ int search_count(char *filename, char *target) {
 }
 
 struct count_result search_instance(char *filename, char *target) {
-    FILE *file;
     struct count_result result = {0, NULL};
+
+    FILE *file = fopen(filename, "r");
+
     char *line = NULL;
     size_t line_capacity = 0;
     ssize_t line_length;
 
-    file = fopen(filename, "r");
-
+    // Read the file line by line and search for instances of the target string
     while ((line_length = getline(&line, &line_capacity, file)) >= 0) {
         char *start = line;
         char *end;
