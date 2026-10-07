@@ -85,14 +85,11 @@ static int run_workers(struct worker_args *args, pthread_t *threads,
 static void *count_worker(void *arg) {
     struct worker_args *args = arg;
     FILE *file = fopen(args->filename, "rb");
-    size_t target_length = strlen(args->target);
-    size_t chunk_length = (size_t)(args->end - args->start);
-    size_t read_length;
+    int target_length = strlen(args->target);
+    int chunk_length = (int)(args->end - args->start);
     char *buffer;
-    size_t bytes_read;
-    size_t i;
 
-    read_length = chunk_length + target_length - 1;
+    int read_length = chunk_length + target_length - 1;
     buffer = malloc(read_length == 0 ? 1 : read_length);
     if (fseek(file, args->start, SEEK_SET) != 0) {
         args->failed = 1;
@@ -100,9 +97,9 @@ static void *count_worker(void *arg) {
         fclose(file);
         return NULL;
     }
-    bytes_read = fread(buffer, 1, read_length, file);
+    int bytes_read = fread(buffer, 1, read_length, file);
 
-    for (i = 0; i < chunk_length && i + target_length <= bytes_read; i++) {
+    for (int i = 0; i < chunk_length && i + target_length <= bytes_read; i++) {
         if (memcmp(buffer + i, args->target, target_length) == 0) {
             args->count++;
         }
