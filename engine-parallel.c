@@ -35,9 +35,8 @@ static void set_worker_ranges(struct worker_args *args, int count,
                               char *filename, char *target, long file_size) {
     long chunk_size = file_size / count;
     long remainder = file_size % count;
-    int i;
 
-    for (i = 0; i < count; i++) {
+    for (int i = 0; i < count; i++) {
         args[i].filename = filename;
         args[i].target = target;
         args[i].start = chunk_size * i + remainder * i / count;
@@ -184,13 +183,12 @@ int search_count(char *filename, char *target) {
     struct worker_args args[MAX_WORKERS];
     pthread_t threads[MAX_WORKERS] = {0};
     int count = MAX_WORKERS;
-    int i;
     int total = 0;
 
     long file_size = get_file_size(filename);
     set_worker_ranges(args, count, filename, target, file_size);
     run_workers(args, threads, count, count_worker);
-    for (i = 0; i < count; i++) {
+    for (int i = 0; i < count; i++) {
         total += args[i].count;
     }
     return total;
