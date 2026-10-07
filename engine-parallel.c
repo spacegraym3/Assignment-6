@@ -11,6 +11,16 @@
 #include <sys/types.h>
 
 #define MAX_WORKERS 4
+/*
+struct worker_args {
+    char *filename;
+    char *target;
+
+    long start; //start of the chunk to process
+    long end; //end of the chunk to process
+
+};
+*/
 
 struct worker_args {
     char *filename;
@@ -72,22 +82,14 @@ static void set_worker_ranges(struct worker_args *args, int count,
 static int run_workers(struct worker_args *args, pthread_t *threads,
                        int count, void *(*worker)(void *)) {
     int started[MAX_WORKERS] = {0};
-    int i;
     int success = 1;
 
-    for (i = 0; i < count; i++) {
-        int error = pthread_create(&threads[i], NULL, worker, &args[i]);
-
-        if (error != 0) {
-            fprintf(stderr, "pthread_create: %s; running worker inline\n",
-                    strerror(error));
-            worker(&args[i]);
-        } else {
-            started[i] = 1;
-        }
+    for (int i = 0; i < count; i++) {
+        pthread_create(&threads[i], NULL, worker, &args[i]);
+        started[i] = 1;
     }
 
-    for (i = 0; i < count; i++) {
+    for (int i = 0; i < count; i++) {
         int error;
 
         if (!started[i]) {
