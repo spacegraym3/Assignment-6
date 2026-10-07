@@ -19,31 +19,18 @@ int main(int argc, char** argv) {
     
     // read mode
     char *mode = argv[1];
+    char *filepath = argv[2];
+    char *target_word = argv[3];
 
     if (strcmp(mode, "count") != 0 && strcmp(mode, "instance") != 0) {
         fprintf(stderr, "Invalid mode: %s\n", mode);
         return 1;
     }
 
-    // read filepath
-    char *filepath = argv[2];
-
-    // read target word
-    char *target_word = argv[3];
-
-    printf("Mode: %s\n", mode);
-    printf("Filepath: %s\n", filepath);
-    printf("Target word: %s\n", target_word);
-
     if (strcmp(mode, "count") == 0) {
-        int count = search_count(filepath, target_word);
-        printf("Found: %d of %s in %s\n", count, target_word, filepath);
+        search_count(filepath, target_word);
     } else  if (strcmp(mode, "instance") == 0) {
-        struct count_result result = search_instance(filepath, target_word);
-        printf("Found: %d of %s in %s\n", result.count, target_word, filepath);
-        for (int i = 0; i < result.count; i++) {
-            printf("res.instances[%d]: %s\n", i, result.instances[i]);
-        }
+        search_instance(filepath, target_word);
     }
 
     return 0;
