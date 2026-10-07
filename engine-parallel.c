@@ -10,7 +10,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define MAX_WORKERS 10
+#define MAX_WORKERS 1000
 
 struct worker_args {
     char *filename;
@@ -22,18 +22,6 @@ struct worker_args {
     size_t capacity;
     int failed;
 };
-
-static int worker_count(long file_size) {
-    int count = MAX_WORKERS;
-
-    if (file_size <= 0) {
-        return 1;
-    }
-    if (file_size < count) {
-        count = (int)file_size;
-    }
-    return count;
-}
 
 static long long get_file_size(const char *filename) {
     struct stat st;
@@ -62,24 +50,11 @@ static void set_worker_ranges(struct worker_args *args, int count,
     }
 }
 
-static int run_workers(struct worker_args *args, pthread_t *threads,
-                       int count, void *(*worker)(void *)) {
-    int started[MAX_WORKERS] = {0};
-    int success = 1;
-
+static void run_workers(struct worker_args *args, pthread_t *threads, int count, void *(*worker)(void *)) {
     for (int i = 0; i < count; i++) {
         pthread_create(&threads[i], NULL, worker, &args[i]);
-        started[i] = 1;
-    }
-
-    for (int i = 0; i < count; i++) {
-
-        if (!started[i]) {
-            continue;
-        }
         pthread_join(threads[i], NULL);
     }
-    return success;
 }
 
 static void *count_worker(void *arg) {
@@ -208,16 +183,13 @@ static void *instance_worker(void *arg) {
 int search_count(char *filename, char *target) {
     struct worker_args args[MAX_WORKERS];
     pthread_t threads[MAX_WORKERS] = {0};
-    int count;
+    int count = MAX_WORKERS;
     int i;
     int total = 0;
 
     long file_size = get_file_size(filename);
-    count = worker_count(file_size);
     set_worker_ranges(args, count, filename, target, file_size);
-    if (!run_workers(args, threads, count, count_worker)) {
-        return 0;
-    }
+    run_workers(args, threads, count, count_worker);
     for (i = 0; i < count; i++) {
         total += args[i].count;
     }
@@ -228,51 +200,23 @@ struct count_result search_instance(char *filename, char *target) {
     struct worker_args args[MAX_WORKERS];
     pthread_t threads[MAX_WORKERS] = {0};
     struct count_result result = {0, NULL};
-    int count;
-    int i;
+    int count = MAX_WORKERS;
     int total = 0;
     int offset = 0;
 
     long file_size = get_file_size(filename);
-    count = worker_count(file_size);
     set_worker_ranges(args, count, filename, target, file_size);
-    if (!run_workers(args, threads, count, instance_worker)) {
-        return result;
-    }
+    run_workers(args, threads, count, instance_worker);
 
-    for (i = 0; i < count; i++) {
-        if (args[i].failed) {
-            fprintf(stderr, "%s: failed to read or store instances\n", filename);
-            for (int j = 0; j < count; j++) {
-                for (int k = 0; k < args[j].result.count; k++) {
-                    free(args[j].result.instances[k]);
-                }
-                free(args[j].result.instances);
-            }
-            return result;
-        }
+    for (int i = 0; i < count; i++) {
         total += args[i].result.count;
     }
 
-    if (total == 0) {
-        return result;
-    }
-    result.instances = malloc((size_t)total * sizeof(*result.instances));
-    if (result.instances == NULL) {
-        fprintf(stderr, "Unable to allocate instance result\n");
-        for (i = 0; i < count; i++) {
-            for (int j = 0; j < args[i].result.count; j++) {
-                free(args[i].result.instances[j]);
-            }
-            free(args[i].result.instances);
-        }
-        return result;
-    }
+    result.instances = malloc(total * sizeof(*result.instances));
 
-    for (i = 0; i < count; i++) {
-        int j;
+    for (int i = 0; i < count; i++) {
 
-        for (j = 0; j < args[i].result.count; j++) {
+        for (int j = 0; j < args[i].result.count; j++) {
             result.instances[offset++] = args[i].result.instances[j];
         }
         free(args[i].result.instances);
