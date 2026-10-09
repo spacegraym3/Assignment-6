@@ -22,11 +22,6 @@ int main(int argc, char** argv) {
     char *filepath = argv[2];
     char *target_word = argv[3];
 
-    if (strcmp(mode, "count") != 0 && strcmp(mode, "instance") != 0) {
-        fprintf(stderr, "Invalid mode: %s\n", mode);
-        return 1;
-    }
-
     if (strcmp(mode, "count") == 0) {
         search_count(filepath, target_word);
     } else  if (strcmp(mode, "instance") == 0) {
