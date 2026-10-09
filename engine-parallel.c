@@ -10,7 +10,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define MAX_WORKERS 1000
+#define MAX_WORKERS 10
 
 struct worker_args {
     char *filename;
@@ -23,7 +23,7 @@ struct worker_args {
     int failed;
 };
 
-static long long get_file_size(const char *filename) {
+long long get_file_size(const char *filename) {
     struct stat st;
     if (stat(filename, &st) == 0) {
         return (long long)st.st_size;
@@ -31,8 +31,7 @@ static long long get_file_size(const char *filename) {
     return -1; // Error opening or finding file
 }
 
-static void set_worker_ranges(struct worker_args *args, int count,
-                              char *filename, char *target, long file_size) {
+void set_worker_ranges(struct worker_args *args, int count, char *filename, char *target, long file_size) {
     long chunk_size = file_size / count;
     long remainder = file_size % count;
 
@@ -49,55 +48,21 @@ static void set_worker_ranges(struct worker_args *args, int count,
     }
 }
 
-static void run_workers(struct worker_args *args, pthread_t *threads, int count, void *(*worker)(void *)) {
+void run_workers(struct worker_args *args, pthread_t *threads, int count, void *(*worker)(void *)) {
     for (int i = 0; i < count; i++) {
         pthread_create(&threads[i], NULL, worker, &args[i]);
         pthread_join(threads[i], NULL);
     }
 }
 
-static void *count_worker(void *arg) {
-    struct worker_args *args = arg;
-    FILE *file = fopen(args->filename, "rb");
-    int target_length = strlen(args->target);
-    int chunk_length = (int)(args->end - args->start);
-    char *buffer;
 
-    int read_length = chunk_length + target_length - 1;
-    buffer = malloc(read_length == 0 ? 1 : read_length);
-    if (fseek(file, args->start, SEEK_SET) != 0) {
-        args->failed = 1;
-        free(buffer);
-        fclose(file);
-        return NULL;
-    }
-    int bytes_read = fread(buffer, 1, read_length, file);
-
-    for (int i = 0; i < chunk_length && i + target_length <= bytes_read; i++) {
-        if (memcmp(buffer + i, args->target, target_length) == 0) {
-            args->count++;
-        }
-    }
-
-    free(buffer);
-    fclose(file);
-    return NULL;
-}
-
-static int append_instance(struct worker_args *args, const char *line,
-                           size_t line_length) {
+int append_instance(struct worker_args *args, const char *line, size_t line_length) {
     char **instances;
     char *instance;
 
     if ((size_t)args->result.count == args->capacity) {
         size_t new_capacity = args->capacity == 0 ? 8 : args->capacity * 2;
-
-        if (new_capacity < args->capacity ||
-            new_capacity > SIZE_MAX / sizeof(*instances)) {
-            return 0;
-        }
-        instances = realloc(args->result.instances,
-                            new_capacity * sizeof(*instances));
+        instances = realloc(args->result.instances, new_capacity * sizeof(*instances));
         if (instances == NULL) {
             return 0;
         }
@@ -106,36 +71,24 @@ static int append_instance(struct worker_args *args, const char *line,
     }
 
     instance = malloc(line_length + 1);
-    if (instance == NULL) {
-        return 0;
-    }
     memcpy(instance, line, line_length);
     instance[line_length] = '\0';
     args->result.instances[args->result.count++] = instance;
     return 1;
 }
 
-static void *instance_worker(void *arg) {
+void *instance_worker(void *arg) {
     struct worker_args *args = arg;
     FILE *file = fopen(args->filename, "r");
     char *line = NULL;
     size_t line_capacity = 0;
     long line_start;
     ssize_t line_length;
-    if (fseek(file, args->start, SEEK_SET) != 0) {
-        args->failed = 1;
-        fclose(file);
-        return NULL;
-    }
+    fseek(file, args->start, SEEK_SET);
 
     if (args->start > 0) {
         int previous;
-
-        if (fseek(file, args->start - 1, SEEK_SET) != 0) {
-            args->failed = 1;
-            fclose(file);
-            return NULL;
-        }
+        fseek(file, args->start - 1, SEEK_SET);
         previous = fgetc(file);
         if (previous != '\n' && getline(&line, &line_capacity, file) < 0 &&
             ferror(file)) {
@@ -178,6 +131,28 @@ static void *instance_worker(void *arg) {
     fclose(file);
     return NULL;
 }
+void *count_worker(void *arg) {
+    struct worker_args *args = arg;
+    FILE *file = fopen(args->filename, "rb");
+    int target_length = strlen(args->target);
+    int chunk_length = (int)(args->end - args->start);
+    char *buffer;
+
+    int read_length = chunk_length + target_length - 1;
+    buffer = malloc(read_length == 0 ? 1 : read_length);
+    fseek(file, args->start, SEEK_SET);
+    int bytes_read = fread(buffer, 1, read_length, file);
+
+    for (int i = 0; i < chunk_length && i + target_length <= bytes_read; i++) {
+        if (memcmp(buffer + i, args->target, target_length) == 0) {
+            args->count++;
+        }
+    }
+
+    free(buffer);
+    fclose(file);
+    return NULL;
+}
 
 int search_count(char *filename, char *target) {
     struct worker_args args[MAX_WORKERS];
@@ -213,7 +188,6 @@ struct count_result search_instance(char *filename, char *target) {
     result.instances = malloc(total * sizeof(*result.instances));
 
     for (int i = 0; i < count; i++) {
-
         for (int j = 0; j < args[i].result.count; j++) {
             result.instances[offset++] = args[i].result.instances[j];
         }

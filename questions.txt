@@ -1,2 +1,3 @@
 (1) The total real/clock time was .023 seconds.  Of that time, the elapse time on codespaces was 23 milliseconds, the user time was 11 milliseconds and the system time was 7 milliseconds. There was a lot of time spent with system I/O compared to the user time.
-
+(2) I did not encounter any data races because each thread was working on a different portion of the file.  The way I avoided data races is to ensure every thread is working on a unique subset of the data.  There is no shared data between the threads.  Therefore, they can independtly run their job without working on the same data thus eliminating data races.
+(3) 

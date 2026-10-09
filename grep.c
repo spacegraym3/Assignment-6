@@ -14,10 +14,7 @@ int main(int argc, char** argv) {
                 argv[0]);
         return 1;
     }
-
-    // count data/warnpeace.txt help
     
-    // read mode
     char *mode = argv[1];
     char *filepath = argv[2];
     char *target_word = argv[3];
@@ -27,6 +24,5 @@ int main(int argc, char** argv) {
     } else  if (strcmp(mode, "instance") == 0) {
         search_instance(filepath, target_word);
     }
-
     return 0;
 }

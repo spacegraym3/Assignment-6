@@ -60,8 +60,7 @@ struct count_result search_instance(char *filename, char *target) {
         char **new_instances;
         int occurrences = 0;
 
-        while (start < line + line_length &&
-               isspace((unsigned char)*start)) {
+        while (start < line + line_length && isspace((unsigned char)*start)) {
             start++;
         }
 
@@ -72,26 +71,14 @@ struct count_result search_instance(char *filename, char *target) {
 
         instance_length = (int)(end - start);
         instance = malloc(instance_length + 1);
-        if (instance == NULL) {
-            break;
-        }
         memcpy(instance, start, instance_length);
         instance[instance_length] = '\0';
 
         while ((match = strstr(match, target)) != NULL) {
-            new_instances = realloc(result.instances,
-                                    (int)(result.count + 1) * sizeof(*new_instances));
-            if (new_instances == NULL) {
-                free(instance);
-                break;
-            }
+            new_instances = realloc(result.instances, (int)(result.count + 1) * sizeof(*new_instances));
 
             result.instances = new_instances;
             result.instances[result.count++] = strdup(instance);
-            if (result.instances[result.count - 1] == NULL) {
-                free(instance);
-                break;
-            }
             occurrences++;
             match += strlen(target);
         }

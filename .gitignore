@@ -2,3 +2,10 @@
 grep*
 test
 test-*
+*changes
+*incase*
+data/*
+bigfile.txt
+data/bigfile.txt
+data/*
+
