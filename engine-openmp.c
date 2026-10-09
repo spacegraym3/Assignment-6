@@ -36,15 +36,6 @@ static int append_instance(struct instance_chunk *chunk, const char *line, size_
     return 1;
 }
 
-static void free_instance_chunks(struct instance_chunk *chunks, int count) {
-    for (int i = 0; i < count; i++) {
-        for (int j = 0; j < chunks[i].count; j++) {
-            free(chunks[i].instances[j]);
-        }
-        free(chunks[i].instances);
-    }
-}
-
 int search_count(char *filename, char *target) {
     int total = 0;
 
@@ -183,12 +174,6 @@ struct count_result search_instance(char *filename, char *target) {
     }
     if (total > 0) {
         result.instances = malloc(total * sizeof(*result.instances));
-        if (result.instances == NULL) {
-            fprintf(stderr, "%s: unable to allocate search results\n", filename);
-            free_instance_chunks(chunks, thread_count);
-            free(chunks);
-            return result;
-        }
         for (int i = 0; i < thread_count; i++) {
             if (chunks[i].count > 0) {
                 memcpy(result.instances + result.count, chunks[i].instances,
